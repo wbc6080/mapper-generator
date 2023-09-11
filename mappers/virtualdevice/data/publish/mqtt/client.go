@@ -8,6 +8,7 @@ import (
 	"github.com/kubeedge/mapper-generator/pkg/global"
 	"k8s.io/klog/v2"
 	"os"
+	"time"
 )
 
 type PushMethod struct {
@@ -50,7 +51,11 @@ func (pm *PushMethod) Push(data *common.DataModel) {
 		fmt.Println(token.Error())
 		os.Exit(1)
 	}
-	token := client.Publish(pm.MQTT.Topic, byte(pm.MQTT.QoS), pm.MQTT.Retained, data.Value)
+	formatTimeStr := time.Unix(data.TimeStamp/1e3, 0).Format("2006-01-02 15:04:05")
+	str_time := "time is " + formatTimeStr + "  "
+	str_publish := str_time + pm.MQTT.Topic + ": " + data.Value
+
+	token := client.Publish(pm.MQTT.Topic, byte(pm.MQTT.QoS), pm.MQTT.Retained, str_publish)
 	token.Wait()
 
 	client.Disconnect(250)

@@ -36,15 +36,15 @@ spec:
         configData:
           dataType: int
       pushMethod:
-        #        mqtt:
-        #          address: tcp://0.0.0.0:1883
-        #          topic: random-int
-        #          qos: 0
-        #          retained: false
-        http:
-          hostName: "http://127.0.0.1"
-          port: 30014
-          timeout: 1000000
+        mqtt:
+          address: tcp://0.0.0.0:1883
+          topic: random-int
+          qos: 0
+          retained: false
+#        http:
+#          hostName: "http://127.0.0.1"
+#          port: 30014
+#          timeout: 1000000
       reportCycle: 10000000000
 
       dbProvider:
@@ -59,11 +59,7 @@ spec:
             tagKey: unit
             tagValue: temperature
             fieldKey: wbctest
-        #        mqtt:
-        #          address: tcp://0.0.0.0:1883
-        #          topic: random-int
-        #          qos: 0
-        #          retained: false
+
     - propertyName: random-float
       customizedProtocol:
         protocolName: virtualProtocol
@@ -71,11 +67,16 @@ spec:
           dataType: float
       collectCycle: 10000000000
       pushMethod:
-        http:
-          hostName: "http://127.0.0.1"
-          port: 30014
-          #          requestPath: "/test"
-          timeout: 1000000
+#        http:
+#          hostName: "http://127.0.0.1"
+#          port: 30014
+#          #requestPath: "/test"
+#          timeout: 1000000
+        mqtt:
+          address: tcp://0.0.0.0:1883
+          topic: random-float
+          qos: 0
+          retained: false
       reportCycle: 10000000000
 status:
   twins:

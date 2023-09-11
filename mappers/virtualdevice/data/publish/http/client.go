@@ -49,7 +49,6 @@ func (pm *PushMethod) Push(data *common.DataModel) {
 	klog.V(1).Infof("targetUrl = %s", targetUrl)
 	payload := data.PropertyName + "=" + data.Value
 	formatTimeStr := time.Unix(data.TimeStamp/1e3, 0).Format("2006-01-02 15:04:05")
-	//formatTimeStr := strconv.FormatInt(data.TimeStamp, 10)
 	currentTime := "&time" + "=" + formatTimeStr
 	payload += currentTime
 	resp, err := http.Post(targetUrl,
