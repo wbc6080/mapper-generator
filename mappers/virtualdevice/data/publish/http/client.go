@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/kubeedge/mapper-generator/pkg/common"
 	"github.com/kubeedge/mapper-generator/pkg/global"
@@ -44,14 +45,13 @@ func (pm *PushMethod) InitPushMethod() error {
 func (pm *PushMethod) Push(data *common.DataModel) {
 	// TODO add push code
 
-	//url := fmt.Sprintf("%s%d/%s", pm.HTTP.HostName, pm.HTTP.Port, pm.HTTP.RequestPath)
-	//klog.V(1).Info("+++++++++++++++")
-	//klog.V(1).Infof("data.PropertyName = %s", data.PropertyName)
-	//klog.V(1).Info("+++++++++++++++")
 	targetUrl := pm.HTTP.HostName + ":" + strconv.Itoa(pm.HTTP.Port) + pm.HTTP.RequestPath
 	klog.V(1).Infof("targetUrl = %s", targetUrl)
-	//payload := "value=" + data.Value
 	payload := data.PropertyName + "=" + data.Value
+	formatTimeStr := time.Unix(data.TimeStamp/1e3, 0).Format("2006-01-02 15:04:05")
+	//formatTimeStr := strconv.FormatInt(data.TimeStamp, 10)
+	currentTime := "&time" + "=" + formatTimeStr
+	payload += currentTime
 	resp, err := http.Post(targetUrl,
 		"application/x-www-form-urlencoded",
 		strings.NewReader(payload))
@@ -64,8 +64,6 @@ func (pm *PushMethod) Push(data *common.DataModel) {
 	if err != nil {
 		// handle error
 	}
-	klog.V(1).Info("%%%%%%%%%%%%%%%%%%%%%%%%")
 	klog.V(1).Info(string(body))
-	klog.V(1).Info("%%%%%%%%%%%%%%%%%%%%%%%%")
 
 }
