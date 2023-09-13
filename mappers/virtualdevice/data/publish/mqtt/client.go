@@ -59,6 +59,5 @@ func (pm *PushMethod) Push(data *common.DataModel) {
 	token.Wait()
 
 	client.Disconnect(250)
-	klog.V(1).Info("###############")
-	klog.V(1).Info("Message published.")
+	klog.V(1).Info("###############  Message published.  ###############")
 }

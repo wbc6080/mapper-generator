@@ -394,12 +394,13 @@ message VisitorConfigPushMethod{
 }
 
 message VisitorConfigDbProvider{
-    // the visitor to report the properties of the device by customized method.
+    // the config of database .
     DbProviderInflux influx = 1;
+    DbProviderRedis  redis = 2;
 }
 
 message DbProviderInflux{
-    // the visitor to report the properties of the device by customized method.
+    // the configData of influx database.
     ConfigData configData = 1;
     DataStandard dataStandard = 2;
 }
@@ -423,7 +424,23 @@ message ConfigData{
     string bucket = 4;
 }
 
+message DbProviderRedis{
+    // the configData of redis database.
+    RedisConfigData redisConfigData = 1;
+}
 
+message RedisConfigData{
+    // Addr of Redis database
+    string addr = 1;
+    // Password of Redis database
+    string password = 2;
+    // Db of Redis database
+    int64 db = 3;
+    // Poolsize of Redis database
+    int64 poolsize  = 4;
+    // MinIdleConns of Redis database
+    int64 minIdleConns =5;
+}
 
 // the visitor to report the properties of the device by mqtt
 message PushMethodMQTT{
@@ -436,8 +453,6 @@ message PushMethodMQTT{
     // is the message retained
     bool retained = 4;
 }
-
-
 
 // the visitor to report the properties of the device by http.
 message PushMethodHTTP{

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/kubeedge/mapper-generator/pkg/common"
+	"k8s.io/klog/v2"
 	"time"
 )
 
@@ -66,6 +67,7 @@ func (d *DataBaseConfig) AddData(data *common.DataModel, client influxdb2.Client
 	// write point immediately
 	err := writeAPI.WritePoint(context.Background(), p)
 	if err != nil {
+		klog.V(4).Info("Exit AddData")
 		return err
 	}
 	return nil

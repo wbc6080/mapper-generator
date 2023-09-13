@@ -12,7 +12,8 @@ import (
 
 	"k8s.io/klog/v2"
 
-	db "github.com/kubeedge/mapper-generator/mappers/virtualdevice/data/dbprovider/influx"
+	dbInflux "github.com/kubeedge/mapper-generator/mappers/virtualdevice/data/dbprovider/influx"
+	dbRedis "github.com/kubeedge/mapper-generator/mappers/virtualdevice/data/dbprovider/redis"
 	httpMethod "github.com/kubeedge/mapper-generator/mappers/virtualdevice/data/publish/http"
 	mqttMethod "github.com/kubeedge/mapper-generator/mappers/virtualdevice/data/publish/mqtt"
 	"github.com/kubeedge/mapper-generator/mappers/virtualdevice/driver"
@@ -150,9 +151,8 @@ func dataHandler(ctx context.Context, dev *driver.CustomizedDev) {
 		}
 		// handle database
 
-		klog.V(1).Infof("twin.PVisitor.DbProvider = %v", twin.PVisitor.DbProvider)
-		if twin.PVisitor.DbProvider.ProviderConfig.ConfigData != nil && twin.PVisitor.DbProvider.ProviderConfig.DataStandard != nil &&
-			twin.PVisitor.DbProvider.DbProviderName != "" {
+		//klog.V(1).Infof("twin.PVisitor.DbProvider = %v", twin.PVisitor.DbProvider)
+		if twin.PVisitor.DbProvider.DbProviderName != "" {
 			// TODO add flag to start db work
 			dataModel := common.NewDataModel(dev.Instance.Name, twin.PVisitor.PropertyName, common.WithType(twin.Desired.Metadatas.Type))
 			dbHandler(ctx, &twin, dev.CustomizedClient, &visitorConfig, dataModel)
@@ -200,12 +200,8 @@ func pushHandler(ctx context.Context, twin *common.Twin, client *driver.Customiz
 					klog.Errorf("Failed to convert publish method data : %v", err)
 					continue
 				}
-				klog.V(1).Infof("visitorConfig.ProtocolName = %s", visitorConfig.ProtocolName)
-				klog.V(1).Infof("twin.PropertyName = %s", twin.PropertyName)
-
 				dataModel.SetValue(sData)
 				dataModel.SetTimeStamp()
-
 				dataPanel.Push(dataModel)
 			case <-ctx.Done():
 				return
@@ -219,19 +215,17 @@ func dbHandler(ctx context.Context, twin *common.Twin, client *driver.Customized
 
 	switch twin.PVisitor.DbProvider.DbProviderName {
 	case "influx":
-
-		klog.V(1).Infof("providerConfig = %v", twin.PVisitor.DbProvider.ProviderConfig)
-		testconfig := make(map[string]interface{})
-		err := json.Unmarshal(twin.PVisitor.DbProvider.ProviderConfig.ConfigData, &testconfig)
-		if err == nil {
-			klog.V(1).Infof("ProviderConfig.ConfigData = %v", testconfig)
-		}
-		testconfig = make(map[string]interface{})
-		err = json.Unmarshal(twin.PVisitor.DbProvider.ProviderConfig.DataStandard, &testconfig)
-		if err == nil {
-			klog.V(1).Infof("ProviderConfig.DataStandard = %v", testconfig)
-		}
-		dbConfig, err := db.NewDataBaseClient(twin.PVisitor.DbProvider.ProviderConfig.ConfigData, twin.PVisitor.DbProvider.ProviderConfig.DataStandard)
+		//testconfig := make(map[string]interface{})
+		//err := json.Unmarshal(twin.PVisitor.DbProvider.ProviderConfig.ConfigData, &testconfig)
+		//if err == nil {
+		//	klog.V(1).Infof("ProviderConfig.ConfigData = %v", testconfig)
+		//}
+		//testconfig = make(map[string]interface{})
+		//err = json.Unmarshal(twin.PVisitor.DbProvider.ProviderConfig.DataStandard, &testconfig)
+		//if err == nil {
+		//	klog.V(1).Infof("ProviderConfig.DataStandard = %v", testconfig)
+		//}
+		dbConfig, err := dbInflux.NewDataBaseClient(twin.PVisitor.DbProvider.ProviderConfig.ConfigData, twin.PVisitor.DbProvider.ProviderConfig.DataStandard)
 		if err != nil {
 			klog.Errorf("new database client error: %v", err)
 			return
@@ -274,6 +268,51 @@ func dbHandler(ctx context.Context, twin *common.Twin, client *driver.Customized
 				}
 			}
 		}()
+	case "redis":
+		dbConfig, err := dbRedis.NewDataBaseClient(twin.PVisitor.DbProvider.ProviderConfig.RedisConfigData)
+		if err != nil {
+			klog.Errorf("new database client error: %v", err)
+			return
+		}
+		dbClient, err := dbConfig.InitDbClient()
+		if err != nil {
+			klog.Errorf("init database client err: %v", err)
+			return
+		}
+		reportCycle := time.Duration(twin.PVisitor.ReportCycle)
+		if reportCycle == 0 {
+			reportCycle = 1 * time.Second
+		}
+		ticker := time.NewTicker(reportCycle)
+		go func() {
+			for {
+				select {
+				case <-ticker.C:
+					deviceData, err := client.GetDeviceData(visitorConfig)
+					if err != nil {
+						klog.Errorf("publish error: %v", err)
+						continue
+					}
+					sData, err := common.ConvertToString(deviceData)
+					if err != nil {
+						klog.Errorf("Failed to convert publish method data : %v", err)
+						continue
+					}
+					dataModel.SetValue(sData)
+					dataModel.SetTimeStamp()
+
+					err = dbConfig.AddData(dataModel, dbClient)
+					if err != nil {
+						klog.Errorf("redis database add data error: %v", err)
+						return
+					}
+				case <-ctx.Done():
+					dbConfig.CloseSession(dbClient)
+					return
+				}
+			}
+		}()
+
 	}
 }
 

@@ -90,8 +90,9 @@ type DbProviderConfig struct {
 }
 
 type ProviderConfig struct {
-	ConfigData   json.RawMessage `json:"configData"`
-	DataStandard json.RawMessage `json:"dataStandard"`
+	ConfigData      json.RawMessage `json:"configData"`
+	DataStandard    json.RawMessage `json:"dataStandard"`
+	RedisConfigData json.RawMessage `json:" redisConfigData"`
 }
 
 // Data is data structure for the message that only be subscribed in edge node internal.

@@ -53,6 +53,8 @@ func getDbProviderFromGrpc(visitor *dmiapi.DevicePropertyVisitor) (string, error
 	// TODO add more dbProvider
 	if visitor.DbProvider.Influx != nil {
 		return "influx", nil
+	} else if visitor.DbProvider.Redis != nil {
+		return "redis", nil
 	}
 	return "", errors.New("can not parse dbProvider")
 }
@@ -346,33 +348,63 @@ func buildPropertyVisitorsFromGrpc(device *dmiapi.Device) []common.PropertyVisit
 					ConfigData:   configdata,
 					DataStandard: datastandard,
 				}
+			case "redis":
+				redisconfigdata, err := json.Marshal(pptv.DbProvider.Redis.RedisConfigData)
+				if err != nil {
+					klog.Errorf("err: %+v", err)
+					return nil
+				}
+				dbProvider = common.ProviderConfig{
+					RedisConfigData: redisconfigdata,
+				}
 			}
+
 		}
-		var pushMethodName string
+		//dbProviderName, err := getDbProviderFromGrpc(pptv)
+		//if err != nil {
+		//	klog.Errorf("err: %+v", err)
+		//	return nil
+		//}
+		//var dbProvider common.ProviderConfig
+		//switch dbProviderName {
+		//case "influx":
+		//	configdata, err := json.Marshal(pptv.DbProvider.Influx.ConfigData)
+		//	if err != nil {
+		//		klog.Errorf("err: %+v", err)
+		//		return nil
+		//	}
+		//	datastandard, err := json.Marshal(pptv.DbProvider.Influx.DataStandard)
+		//	if err != nil {
+		//		klog.Errorf("err: %+v", err)
+		//		return nil
+		//	}
+		//	dbProvider = common.ProviderConfig{
+		//		ConfigData:   configdata,
+		//		DataStandard: datastandard,
+		//	}
+		//}
+		pushMethodName, err := getPushMethodFromGrpc(pptv)
+		if err != nil {
+			klog.Errorf("err: %+v", err)
+			return nil
+		}
 		var pushMethod []byte
-		if pptv.PushMethod != nil {
-			pushMethodName, err = getPushMethodFromGrpc(pptv)
+		switch pushMethodName {
+		case "http":
+			pushMethod, err = json.Marshal(pptv.PushMethod.Http)
 			if err != nil {
 				klog.Errorf("err: %+v", err)
 				return nil
 			}
-			switch pushMethodName {
-			case "http":
-				pushMethod, err = json.Marshal(pptv.PushMethod.Http)
-				if err != nil {
-					klog.Errorf("err: %+v", err)
-					return nil
-				}
-			case "mqtt":
-				pushMethod, err = json.Marshal(pptv.PushMethod.Mqtt)
-				if err != nil {
-					klog.Errorf("err: %+v", err)
-					return nil
-				}
-			case "customizedPushMethod":
-				//TODO add customized push method parse
+		case "mqtt":
+			pushMethod, err = json.Marshal(pptv.PushMethod.Mqtt)
+			if err != nil {
+				klog.Errorf("err: %+v", err)
 				return nil
 			}
+		case "customizedPushMethod":
+			//TODO add customized push method parse
+			return nil
 		}
 		cur := common.PropertyVisitor{
 			Name:          pptv.PropertyName,
