@@ -55,6 +55,8 @@ func getDbProviderFromGrpc(visitor *dmiapi.DevicePropertyVisitor) (string, error
 		return "influx", nil
 	} else if visitor.DbProvider.Redis != nil {
 		return "redis", nil
+	} else if visitor.DbProvider.Tdengine != nil {
+		return "tdengine", nil
 	}
 	return "", errors.New("can not parse dbProvider")
 }
@@ -356,6 +358,15 @@ func buildPropertyVisitorsFromGrpc(device *dmiapi.Device) []common.PropertyVisit
 				}
 				dbProvider = common.ProviderConfig{
 					RedisConfigData: redisconfigdata,
+				}
+			case "tdengine":
+				tdengineconfigdata, err := json.Marshal(pptv.DbProvider.Tdengine.TdengineConfigData)
+				if err != nil {
+					klog.Errorf("err: %+v", err)
+					return nil
+				}
+				dbProvider = common.ProviderConfig{
+					TdengineConfigData: tdengineconfigdata,
 				}
 			}
 

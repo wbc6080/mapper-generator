@@ -47,13 +47,16 @@ spec:
 #          timeout: 1000000
       reportCycle: 10000000000
       dbProvider:
-        redis:
-          redisConfigData:
-            addr: "127.0.0.1:6379"
-            password: "123456"
-            db: 0
-            poolsize: 30
-            minIdleConns: 30
+        tdengine:
+          tdengineConfigData:
+            dsn: "root:taosdata@http(127.0.0.1:6041)/test"
+#        redis:
+#          redisConfigData:
+#            addr: "127.0.0.1:6379"
+#            password: "123456"
+#            db: 0
+#            poolsize: 30
+#            minIdleConns: 30
     #        influx:
     #          configData:
     #            url: http://localhost:8086

@@ -14,6 +14,7 @@ import (
 
 	dbInflux "github.com/kubeedge/mapper-generator/mappers/virtualdevice/data/dbprovider/influx"
 	dbRedis "github.com/kubeedge/mapper-generator/mappers/virtualdevice/data/dbprovider/redis"
+	dbTdengine "github.com/kubeedge/mapper-generator/mappers/virtualdevice/data/dbprovider/tdengine"
 	httpMethod "github.com/kubeedge/mapper-generator/mappers/virtualdevice/data/publish/http"
 	mqttMethod "github.com/kubeedge/mapper-generator/mappers/virtualdevice/data/publish/mqtt"
 	"github.com/kubeedge/mapper-generator/mappers/virtualdevice/driver"
@@ -308,6 +309,51 @@ func dbHandler(ctx context.Context, twin *common.Twin, client *driver.Customized
 					}
 				case <-ctx.Done():
 					dbConfig.CloseSession(dbClient)
+					return
+				}
+			}
+		}()
+	case "tdengine":
+		klog.V(1).Infof("providerConfig = %v", twin.PVisitor.DbProvider.ProviderConfig)
+		dbConfig, err := dbTdengine.NewDataBaseClient(twin.PVisitor.DbProvider.ProviderConfig.TdengineConfigData)
+		if err != nil {
+			klog.Errorf("new database client error: %v", err)
+			return
+		}
+		err = dbConfig.InitDbClient()
+		if err != nil {
+			klog.Errorf("init database client err: %v", err)
+			return
+		}
+		reportCycle := time.Duration(twin.PVisitor.ReportCycle)
+		if reportCycle == 0 {
+			reportCycle = 1 * time.Second
+		}
+		ticker := time.NewTicker(reportCycle)
+		go func() {
+			for {
+				select {
+				case <-ticker.C:
+					deviceData, err := client.GetDeviceData(visitorConfig)
+					if err != nil {
+						klog.Errorf("publish error: %v", err)
+						continue
+					}
+					sData, err := common.ConvertToString(deviceData)
+					if err != nil {
+						klog.Errorf("Failed to convert publish method data : %v", err)
+						continue
+					}
+					dataModel.SetValue(sData)
+					dataModel.SetTimeStamp()
+
+					err = dbConfig.AddData(dataModel)
+					if err != nil {
+						klog.Errorf("tdengine database add data error: %v", err)
+						return
+					}
+				case <-ctx.Done():
+					dbConfig.CloseSessio()
 					return
 				}
 			}

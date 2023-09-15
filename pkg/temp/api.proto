@@ -397,6 +397,7 @@ message VisitorConfigDbProvider{
     // the config of database .
     DbProviderInflux influx = 1;
     DbProviderRedis  redis = 2;
+    DbProviderTdengine tdengine = 3;
 }
 
 message DbProviderInflux{
@@ -440,6 +441,16 @@ message RedisConfigData{
     int64 poolsize  = 4;
     // MinIdleConns of Redis database
     int64 minIdleConns =5;
+}
+
+message DbProviderTdengine{
+    // the configData of tdengine database.
+    TdengineConfigData tdengineConfigData = 1;
+}
+
+message TdengineConfigData{
+    // Dsn of Tdengine database
+    string dsn = 1;
 }
 
 // the visitor to report the properties of the device by mqtt
